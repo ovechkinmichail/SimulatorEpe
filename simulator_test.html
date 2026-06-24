@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Симулятор эпидемии - Vue 3</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app {
+            width: 800px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .settings {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-item label {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .setting-item input {
+            width: 70px;
+            padding: 6px;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .day-text {
+            font-size: 18px;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+
+        .counters {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 16px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .field {
+            width: 600px;
+            height: 400px;
+            background-color: #f5f5f5;
+            border: 2px solid #999;
+            position: relative;
+            margin: 0 auto 20px;
+            overflow: hidden;
+        }
+
+        .wall-top {
+            position: absolute;
+            left: 290px;
+            top: 0;
+            width: 20px;
+            height: 150px;
+            background-color: #666;
+            border-radius: 2px;
+        }
+
+        .wall-bottom {
+            position: absolute;
+            left: 290px;
+            top: 250px;
+            width: 20px;
+            height: 150px;
+            background-color: #666;
+            border-radius: 2px;
+        }
+
+        .dot-person {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+
+        .dot-person.sick {
+            width: 12px;
+            height: 12px;
+        }
+
+        .chart-section {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .chart-section h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .ratio-bar {
+            width: 100%;
+            height: 40px;
+            background-color: #e0e0e0;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            position: relative;
+        }
+
+        .ratio-segment {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .ratio-segment.healthy {
+            background-color: #3498db;
+        }
+
+        .ratio-segment.sick {
+            background-color: #e74c3c;
+        }
+
+        .ratio-segment.recovered {
+            background-color: #9b59b6;
+        }
+
+        .ratio-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 3px rgba(0,0,0,0.7);
+            white-space: nowrap;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+
+        .daily-chart {
+            width: 100%;
+            height: 200px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            align-items: flex-end;
+            gap: 1px;
+            padding: 2px;
+            overflow-x: auto;
+        }
+
+        .daily-bar {
+            flex: 1;
+            min-width: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .daily-segment {
+            width: 100%;
+        }
+
+        .daily-segment.healthy {
+            background-color: #3498db;
+        }
+
+        .daily-segment.sick {
+            background-color: #e74c3c;
+        }
+
+        .daily-segment.recovered {
+            background-color: #9b59b6;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app">
+            <h1>Симулятор эпидемии</h1>
+            
+            <div class="buttons">
+                <button @click="toggleSimulation">{{ buttonText }}</button>
+                <button @click="resetSimulation">Сброс</button>
+            </div>
+
+            <div class="settings">
+                <div class="setting-item">
+                    <label>Дней симуляции:</label>
+                    <input type="number" v-model.number="totalDays" min="10" max="1000">
+                </div>
+                <div class="setting-item">
+                    <label>Дней до выздоровления:</label>
+                    <input type="number" v-model.number="recoveryDays" min="10" max="500">
+                </div>
+                <span class="day-text">День: {{ currentDay }}</span>
+            </div>
+
+            <div class="counters">
+                <div class="counter">
+                    <span class="dot" style="background-color: #3498db"></span>
+                    Здоровые: {{ healthyCount }}
+                </div>
+                <div class="counter">
+                    <span class="dot" style="background-color: #e74c3c"></span>
+                    Больные: {{ sickCount }}
+                </div>
+                <div class="counter">
+                    <span class="dot" style="background-color: #9b59b6"></span>
+                    Выздоровевшие: {{ recoveredCount }}
+                </div>
+            </div>
+
+            <div class="field">
+                <div class="wall-top"></div>
+                <div class="wall-bottom"></div>
+                
+                <div v-for="person in people" :key="person.id"
+                     class="dot-person"
+                     :class="{ sick: person.status === 'sick' }"
+                     :style="getPersonStyle(person)"
+                     :title="getPersonTitle(person)">
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h3>Текущее соотношение</h3>
+                <div class="ratio-bar">
+                    <div class="ratio-segment healthy" :style="{width: healthyPercent + '%'}"></div>
+                    <div class="ratio-segment sick" :style="{width: sickPercent + '%'}"></div>
+                    <div class="ratio-segment recovered" :style="{width: recoveredPercent + '%'}"></div>
+                    <div class="ratio-label">
+                        Здоровые: {{ healthyCount }} | Больные: {{ sickCount }} | Выздоровевшие: {{ recoveredCount }}
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #3498db"></div>
+                        <span>Здоровые</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e74c3c"></div>
+                        <span>Больные</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #9b59b6"></div>
+                        <span>Выздоровевшие</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h3>График по дням</h3>
+                <div class="daily-chart" ref="dailyChart">
+                    <div v-for="(point, index) in dailyHistory" :key="index"
+                         class="daily-bar"
+                         :title="'День ' + point.day + ': З=' + point.healthy + ' Б=' + point.sick + ' В=' + point.recovered">
+                        <div class="daily-segment healthy" :style="{height: getPercent(point.healthy, point) + '%'}"></div>
+                        <div class="daily-segment sick" :style="{height: getPercent(point.sick, point) + '%'}"></div>
+                        <div class="daily-segment recovered" :style="{height: getPercent(point.recovered, point) + '%'}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        // Класс 1: Человек
+        class Person {
+            constructor(id, x, y, status, isSick) {
+                this.id = id;
+                this.x = x;
+                this.y = y;
+                this.status = status;
+                this.sickDays = 0;
+                
+                const baseSpeed = 2 + Math.random() * 2;
+                const speedMultiplier = isSick ? 1.5 : 1;
+                this.fixedSpeed = baseSpeed * speedMultiplier;
+                
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * this.fixedSpeed;
+                this.vy = Math.sin(angle) * this.fixedSpeed;
+                
+                this.radius = 4;
+            }
+
+            move() {
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx = Math.abs(this.vx);
+                    this.maintainSpeed();
+                }
+                if (this.x + this.radius > 600) {
+                    this.x = 600 - this.radius;
+                    this.vx = -Math.abs(this.vx);
+                    this.maintainSpeed();
+                }
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.vy = Math.abs(this.vy);
+                    this.maintainSpeed();
+                }
+                if (this.y + this.radius > 400) {
+                    this.y = 400 - this.radius;
+                    this.vy = -Math.abs(this.vy);
+                    this.maintainSpeed();
+                }
+                
+                this.checkWallCollision();
+            }
+            
+            maintainSpeed() {
+                const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (currentSpeed > 0) {
+                    const ratio = this.fixedSpeed / currentSpeed;
+                    this.vx *= ratio;
+                    this.vy *= ratio;
+                }
+            }
+            
+            checkWallCollision() {
+                const wallLeft = 290;
+                const wallRight = 310;
+                const holeTop = 150;
+                const holeBottom = 250;
+                
+                if (this.x + this.radius > wallLeft && this.x - this.radius < wallRight) {
+                    const inHole = (this.y > holeTop && this.y < holeBottom);
+                    
+                    if (!inHole) {
+                        if (this.x < 300) {
+                            this.x = wallLeft - this.radius;
+                            this.vx = -Math.abs(this.vx);
+                        } else {
+                            this.x = wallRight + this.radius;
+                            this.vx = Math.abs(this.vx);
+                        }
+                        this.maintainSpeed();
+                    }
+                }
+            }
+        }
+
+        // Класс 2: Симуляция
+        class Simulation {
+            constructor() {
+                this.people = [];
+                this.day = 0;
+                this.dailyHistory = [];
+            }
+
+            initialize(healthyCount, recoveryDays) {
+                this.people = [];
+                this.day = 0;
+                this.dailyHistory = [];
+                this.recoveryDays = recoveryDays;
+                
+                for (let i = 0; i < healthyCount; i++) {
+                    const x = 15 + Math.random() * 255;
+                    const y = 15 + Math.random() * 370;
+                    this.people.push(new Person(i, x, y, 'healthy', false));
+                }
+                
+                const x = 330 + Math.random() * 255;
+                const y = 15 + Math.random() * 370;
+                const sickPerson = new Person(healthyCount, x, y, 'sick', true);
+                sickPerson.sickDays = 0;
+                this.people.push(sickPerson);
+            }
+
+            checkCollisions() {
+                for (let i = 0; i < this.people.length; i++) {
+                    for (let j = i + 1; j < this.people.length; j++) {
+                        const p1 = this.people[i];
+                        const p2 = this.people[j];
+                        
+                        const dx = p2.x - p1.x;
+                        const dy = p2.y - p1.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        const minDistance = p1.radius + p2.radius;
+                        
+                        if (distance < minDistance && distance > 0) {
+                            const nx = dx / distance;
+                            const ny = dy / distance;
+                            
+                            const overlap = minDistance - distance;
+                            p1.x -= nx * overlap / 2;
+                            p1.y -= ny * overlap / 2;
+                            p2.x += nx * overlap / 2;
+                            p2.y += ny * overlap / 2;
+                            
+                            const dvx = p1.vx - p2.vx;
+                            const dvy = p1.vy - p2.vy;
+                            const dvDotN = dvx * nx + dvy * ny;
+                            
+                            if (dvDotN > 0) {
+                                p1.vx -= dvDotN * nx;
+                                p1.vy -= dvDotN * ny;
+                                p2.vx += dvDotN * nx;
+                                p2.vy += dvDotN * ny;
+                                
+                                p1.maintainSpeed();
+                                p2.maintainSpeed();
+                            }
+                        }
+                    }
+                }
+            }
+
+            checkInfections() {
+                this.people.forEach(person => {
+                    if (person.status === 'sick') {
+                        this.people.forEach(other => {
+                            if (other.status === 'healthy') {
+                                const dx = person.x - other.x;
+                                const dy = person.y - other.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance < 25) {
+                                    other.status = 'sick';
+                                    other.sickDays = 0;
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            advanceDay() {
+                this.people.forEach(person => {
+                    if (person.status === 'sick') {
+                        person.sickDays++;
+                        if (person.sickDays >= this.recoveryDays) {
+                            person.status = 'recovered';
+                        }
+                    }
+                });
+                
+                this.day++;
+                
+                let healthy = 0, sick = 0, recovered = 0;
+                this.people.forEach(person => {
+                    if (person.status === 'healthy') healthy++;
+                    else if (person.status === 'sick') sick++;
+                    else if (person.status === 'recovered') recovered++;
+                });
+                
+                this.dailyHistory.push({ day: this.day, healthy, sick, recovered });
+            }
+
+            getStats() {
+                let healthy = 0, sick = 0, recovered = 0;
+                this.people.forEach(person => {
+                    if (person.status === 'healthy') healthy++;
+                    else if (person.status === 'sick') sick++;
+                    else if (person.status === 'recovered') recovered++;
+                });
+                return { healthy, sick, recovered };
+            }
+        }
+
+        // Класс 3: StatisticsTracker
+        class StatisticsTracker {
+            constructor() {
+                this.startTime = null;
+                this.totalInfections = 0;
+            }
+
+            start() {
+                this.startTime = Date.now();
+                this.totalInfections = 0;
+            }
+
+            recordInfection() {
+                this.totalInfections++;
+            }
+
+            getElapsedTime() {
+                if (!this.startTime) return 0;
+                return Math.floor((Date.now() - this.startTime) / 1000);
+            }
+        }
+
+        // Создаём Vue приложение
+        createApp({
+            data() {
+                return {
+                    simulation: new Simulation(),
+                    tracker: new StatisticsTracker(),
+                    isRunning: false,
+                    simulationComplete: false,
+                    totalDays: 200,
+                    recoveryDays: 70,
+                    moveInterval: null,
+                    dayInterval: null,
+                    healthyCount: 50,
+                    sickCount: 1,
+                    recoveredCount: 0,
+                    currentDay: 0
+                };
+            },
+            computed: {
+                buttonText() {
+                    if (this.simulationComplete) return 'Заново';
+                    return this.isRunning ? 'Пауза' : 'Старт';
+                },
+                healthyPercent() {
+                    const total = this.healthyCount + this.sickCount + this.recoveredCount;
+                    return total > 0 ? (this.healthyCount / total) * 100 : 0;
+                },
+                sickPercent() {
+                    const total = this.healthyCount + this.sickCount + this.recoveredCount;
+                    return total > 0 ? (this.sickCount / total) * 100 : 0;
+                },
+                recoveredPercent() {
+                    const total = this.healthyCount + this.sickCount + this.recoveredCount;
+                    return total > 0 ? (this.recoveredCount / total) * 100 : 0;
+                },
+                people() {
+                    return this.simulation.people;
+                },
+                dailyHistory() {
+                    return this.simulation.dailyHistory;
+                }
+            },
+            methods: {
+                getPersonStyle(person) {
+                    return {
+                        left: (person.x - 5) + 'px',
+                        top: (person.y - 5) + 'px',
+                        backgroundColor: this.getPersonColor(person.status)
+                    };
+                },
+                getPersonColor(status) {
+                    if (status === 'healthy') return '#3498db';
+                    if (status === 'sick') return '#e74c3c';
+                    if (status === 'recovered') return '#9b59b6';
+                    return '#95a5a6';
+                },
+                getPersonTitle(person) {
+                    return `ID:${person.id} Статус:${person.status}` + 
+                           (person.status === 'sick' ? ` День болезни:${person.sickDays}` : '');
+                },
+                getPercent(count, point) {
+                    const total = point.healthy + point.sick + point.recovered;
+                    return total > 0 ? (count / total) * 100 : 0;
+                },
+                updatePositions() {
+                    if (!this.isRunning) return;
+                    
+                    this.simulation.people.forEach(person => person.move());
+                    this.simulation.checkCollisions();
+                    this.simulation.checkInfections();
+                    
+                    this.$forceUpdate();
+                },
+                advanceDay() {
+                    if (!this.isRunning || this.simulationComplete) return;
+                    
+                    this.simulation.advanceDay();
+                    
+                    const stats = this.simulation.getStats();
+                    this.healthyCount = stats.healthy;
+                    this.sickCount = stats.sick;
+                    this.recoveredCount = stats.recovered;
+                    this.currentDay = this.simulation.day;
+                    
+                    this.$nextTick(() => {
+                        const chart = this.$refs.dailyChart;
+                        if (chart) {
+                            chart.scrollLeft = chart.scrollWidth;
+                        }
+                    });
+                    
+                    if (this.simulation.day >= this.totalDays) {
+                        this.completeSimulation();
+                    }
+                },
+                toggleSimulation() {
+                    if (this.simulationComplete) {
+                        this.resetSimulation();
+                        return;
+                    }
+                    
+                    if (this.isRunning) {
+                        this.stopTimers();
+                        this.isRunning = false;
+                    } else {
+                        this.totalDays = Math.max(10, Math.min(1000, this.totalDays));
+                        this.recoveryDays = Math.max(10, Math.min(500, this.recoveryDays));
+                        
+                        if (this.simulation.day >= this.totalDays) {
+                            this.completeSimulation();
+                            return;
+                        }
+                        
+                        this.moveInterval = setInterval(this.updatePositions, 16);
+                        this.dayInterval = setInterval(this.advanceDay, 300);
+                        this.isRunning = true;
+                        this.tracker.start();
+                    }
+                },
+                resetSimulation() {
+                    this.stopTimers();
+                    this.isRunning = false;
+                    this.simulationComplete = false;
+                    
+                    this.totalDays = Math.max(10, Math.min(1000, this.totalDays));
+                    this.recoveryDays = Math.max(10, Math.min(500, this.recoveryDays));
+                    
+                    this.simulation.initialize(50, this.recoveryDays);
+                    this.tracker.start();
+                    
+                    const stats = this.simulation.getStats();
+                    this.healthyCount = stats.healthy;
+                    this.sickCount = stats.sick;
+                    this.recoveredCount = stats.recovered;
+                    this.currentDay = 0;
+                    
+                    this.$forceUpdate();
+                },
+                stopTimers() {
+                    if (this.moveInterval) {
+                        clearInterval(this.moveInterval);
+                        this.moveInterval = null;
+                    }
+                    if (this.dayInterval) {
+                        clearInterval(this.dayInterval);
+                        this.dayInterval = null;
+                    }
+                },
+                completeSimulation() {
+                    this.stopTimers();
+                    this.isRunning = false;
+                    this.simulationComplete = true;
+                }
+            },
+            mounted() {
+                this.resetSimulation();
+            },
+            beforeUnmount() {
+                this.stopTimers();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
